@@ -8,9 +8,10 @@ typedef struct {
 } Point ;
 
 typedef struct {
-	Point top_left , bottom_right ;
-} BoundingBox ;
+	Point pmin , pmax ;
+	int x_inters , inc ;
+} Arete ;
 
-void I_scanline( Image*, BoundingBox, Color );
+void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , const int ymax , Color cnew ) ;
 
 #endif

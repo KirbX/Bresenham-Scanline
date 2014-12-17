@@ -3,6 +3,6 @@
 
 #include "Image.h" 
 
-void I_bresenham(Image*,int,int,int,int) ;
+void I_bresenham(Image *img, int xA, int yA, int xB, int yB) ;
 
 #endif
