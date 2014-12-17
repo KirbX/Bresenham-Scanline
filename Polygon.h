@@ -11,6 +11,7 @@ typedef struct poly_vert {
 } PolygonVertex ;
 
 typedef struct {
+	int n;
 	int is_filled , is_closed ;
 	PolygonVertex *current_vertex ;
 	PolygonVertex *head , *tail ;

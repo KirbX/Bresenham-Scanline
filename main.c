@@ -16,14 +16,20 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 
-#include "Bresenham.h"
-#include "CompConnexe.h"
-#include "ScanLine.h"
+#include "Polygon.h"
+Polygon Poly;
 
+static const Color white = (Color) { 1.0 , 1.0 , 1.0 } ; 
+static const Color black = (Color) { 0.0 , 0.0 , 0.0 } ;
+int inc=0;
 Image *img;
-CompConnexes cc ;
-unsigned int cc_num = 0 ;
 
+static void I_refresh()
+{
+    I_fill( img, white ) ;
+    I_changeColor(img, black) ;
+    Pedro(img, &Poly);
+}
 
 Point tab[] = {
 (Point)	{ 50 , 0 } ,
@@ -44,16 +50,6 @@ Point tab[] = {
 (Point) { 50 , -25 } 
 } ;
 
-int inc = 0;
-
-void nextCompCon()
-{
-	if( cc.ncon != 0 )
-	{
-		cc_num =  cc_num % cc.ncon + 1 ; 
-		ccDraw( cc , img , cc_num ) ;
-	}
-}
 
 //------------------------------------------------------------------
 //	C'est le display callback. A chaque fois qu'il faut
@@ -80,7 +76,12 @@ void display_CB()
 void mouse_CB(int button, int state, int x, int y)
 {
 	if((button==GLUT_LEFT_BUTTON)&&(state==GLUT_DOWN))
+    {
 		I_focusPoint(img,x,img->_height-y);
+		Point pn = (Point) { x , img->_height-y };
+        P_add_vertex (&Poly, pn, black);
+        I_refresh();
+    }	
 
 	glutPostRedisplay();
 }
@@ -99,15 +100,11 @@ void keyboard_CB(unsigned char key, int x, int y)
 	case 'z' : I_zoom(img,2.0); break;
 	case 'Z' : I_zoom(img,0.5); break;
 	case 'i' : I_zoomInit(img); break;
-	case 'n' : nextCompCon()  ; break;
-	case 'b' : 
-		I_fill( img , white ) ;
-		I_changeColor( img , black ) ;
-		I_bresenham( img , 50 , 50 , 50 + tab[inc].x , 50 + tab[inc].y ) ;
-		inc = (inc+1) % (sizeof tab / sizeof tab[0] );
-		break ;
+	case 'c' : Poly.is_closed=!Poly.is_closed; break;
+	case 'f' : Poly.is_filled=!Poly.is_filled; break; 
 	default : fprintf(stderr,"keyboard_CB : %d : unknown key.\n",key);
 	}
+	I_refresh();
 	glutPostRedisplay();
 }
 
@@ -147,6 +144,7 @@ int main(int argc, char **argv)
 	else
 	{
 		int largeur, hauteur;
+		Poly = P_new();
 		if(argc==2)
 		{
 			img = I_read(argv[1]);
