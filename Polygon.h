@@ -13,6 +13,7 @@ typedef struct poly_vert {
 typedef struct {
 	int n;
 	int is_filled , is_closed ;
+	int is_edge; //is_edge = 1 => edge || is_edge = 0 => vertex
 	PolygonVertex *current_vertex ;
 	PolygonVertex *head , *tail ;
 } Polygon ;
@@ -25,7 +26,11 @@ void P_insert( Polygon *Poly , PolygonVertex *prec , PolygonVertex *post , Point
 
 void P_remove( Polygon *Poly , PolygonVertex *p ) ;
 
+void P_inc_current( Polygon *Poly );
+void P_dec_current( Polygon *Poly );
+
 PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y ) ;
+PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y);
 
 void Pedro( Image *I , Polygon *Poly ) ;
 

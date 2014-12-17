@@ -1,5 +1,6 @@
 #include "Polygon.h"
-
+#include "math.h"
+static const float EPSILON = 1e-4;
 PolygonVertex * PV_new( Point p , Color c )
 {
 	PolygonVertex *pv = malloc( sizeof *pv ) ;
@@ -57,23 +58,63 @@ void P_insert( Polygon *Poly , PolygonVertex *prec , PolygonVertex *post , Point
 void P_remove( Polygon *Poly , PolygonVertex *p ) 
 {
 	PolygonVertex *it1 = NULL , *it2 = Poly->head ;
-    
-    Poly->n--;
+   
+    if (!(Poly->n==0))
+    {
+        Poly->n--;
+        if (Poly->n==0)
+        {
+            Poly->head=NULL;
+            Poly->tail=NULL;
+            Poly->current_vertex = NULL;
+        }
+        if( it2 == p )
+        {
+            Poly->head = it2->next ;
+            Poly->current_vertex = it2->next;
+        }
+        else
+        {
+            while( it2 != p )
+            {
+                it1 = it2 ;
+                it2 = it2->next ;
+            }
+            if (it2 == Poly->tail)
+            {
+                Poly->tail = it1;
+            }
+            it1->next = it2->next ;
+            Poly->current_vertex = it1;
+        }
+        free( it2 ) ;
+    }
+}
 
-	if( it2 == p )
-	{
-		Poly->head = it2->next ;
-	}
-	else
-	{
-		while( it2 != p )
-		{
-			it1 = it2 ;
-			it2 = it2->next ;
-		}
-		it1->next = it2->next ;
-	}
-	free( it2 ) ;
+void P_inc_current( Polygon *Poly )
+{
+    if (Poly->current_vertex != NULL)
+    {
+        if (Poly->current_vertex == Poly->tail)
+            Poly->current_vertex = Poly->head;
+        else if (Poly->current_vertex->next != NULL)
+            Poly->current_vertex = Poly->current_vertex->next;
+    }
+}
+
+void P_dec_current( Polygon *Poly )
+{
+	PolygonVertex *it = Poly->head ;
+    if (Poly->current_vertex != NULL) 
+    {
+        if (Poly->current_vertex == Poly->head)
+            Poly->current_vertex = Poly->tail;
+        else{
+            while (it->next != Poly->current_vertex)
+                it = it->next;
+            Poly->current_vertex = it;
+        }
+    }
 }
 
 static inline int __carre( int x )
@@ -101,9 +142,49 @@ PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y )
 			pv = it	;
 			min = ced ;
 		}
+	    it=it->next;
 	}
 
 	return pv ;
+}
+
+static float __min_2(float a, float b)
+{
+    return (a<b)?a:b;
+}
+
+static float __dist_pt_xy(Point a, int x, int y){
+    return sqrt(__carre(a.x-x) + __carre(a.y-y));
+}
+
+static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
+{
+    float xya = __dist_pt_xy(a,x,y);
+    float xyb = __dist_pt_xy(b,x,y);
+    float xyab =sqrt(pow(((b.y-a.y)*(x-a.x)+(b.x-a.x)*(y-a.y)),2)/(pow((b.x-a.x),2) + pow((b.y-a.y),2)));
+    return __min_2(xya, __min_2(xyb,xyab));
+}
+
+PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y){
+    PolygonVertex *pv = Poly->head ,
+	     	      *it = Poly->head->next ;
+
+	float ced , min = __dist_edge_point( pv->p, pv->next->p , x , y ) ;
+
+	while( it != NULL && it->next != NULL)
+	{
+		ced = __dist_edge_point(it->p, it->next->p,x,y);
+		printf("%f\n",ced);
+		if( min > ced )
+		{
+			pv = it	;
+			min = ced ;
+		}
+	    it=it->next;
+	}
+
+	return pv ;
+
 }
 
 static void __dro_edge( Image *I , PolygonVertex *v1 , PolygonVertex *v2 )

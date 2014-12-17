@@ -18,38 +18,45 @@
 
 #include "Polygon.h"
 Polygon Poly;
+int _V = 0; //bool pour mode VERTEX
+int _E = 0; //bool pour mode EDGE
 
 static const Color white = (Color) { 1.0 , 1.0 , 1.0 } ; 
 static const Color black = (Color) { 0.0 , 0.0 , 0.0 } ;
 int inc=0;
+
 Image *img;
+static int __Gut_Y(int y)
+{
+    return img->_height-y;
+}
+
+static void __Carre (Image *img, int x, int y){
+    I_changeColor(img, (Color) {1.0,0.0,0.0});
+    I_bresenham( img, x-4, __Gut_Y(y)+4, x+4, __Gut_Y(y)+4);
+    I_bresenham( img, x+4, __Gut_Y(y)+4, x+4, __Gut_Y(y)-4);
+    I_bresenham( img, x+4, __Gut_Y(y)-4, x-4, __Gut_Y(y)-4);
+    I_bresenham( img, x-4, __Gut_Y(y)-4, x-4, __Gut_Y(y)+4);
+}
+
+static void __Carre_PV(Image *img, PolygonVertex *pv){
+    __Carre(img, pv->p.x, __Gut_Y(pv->p.y));
+}
 
 static void I_refresh()
 {
     I_fill( img, white ) ;
     I_changeColor(img, black) ;
     Pedro(img, &Poly);
+    if (_V && Poly.current_vertex !=NULL)
+        __Carre_PV(img, Poly.current_vertex);
+
+    if (_E && Poly.current_vertex !=NULL && Poly.current_vertex->next)
+    {
+        __Carre_PV(img, Poly.current_vertex);
+        __Carre_PV(img, Poly.current_vertex->next);
+    }
 }
-
-Point tab[] = {
-(Point)	{ 50 , 0 } ,
-(Point)	{ 50 , 25 } , 
-(Point)	{ 50 , 50 } , 
-(Point)	{ 25 , 50 } , 
-(Point)	{ 0 , 50 } , 
-(Point)	{ -25 , 50 } , 
-(Point)	{ -50 , 50 } ,
-(Point)	{ -50 , 25 } , 
-(Point)	{ -50 , 0 } , 
-(Point)	{ -50 , -25 }, 
-(Point)	{ -50 , -50 } , 
-(Point)	{ -25 , -50 } , 
-(Point)	{ 0 , -50 } , 
-(Point)	{ 25 , -50 } ,
-(Point) { 50 , -50 } ,
-(Point) { 50 , -25 } 
-} ;
-
 
 //------------------------------------------------------------------
 //	C'est le display callback. A chaque fois qu'il faut
@@ -77,11 +84,34 @@ void mouse_CB(int button, int state, int x, int y)
 {
 	if((button==GLUT_LEFT_BUTTON)&&(state==GLUT_DOWN))
     {
-		I_focusPoint(img,x,img->_height-y);
-		Point pn = (Point) { x , img->_height-y };
-        P_add_vertex (&Poly, pn, black);
+        if (!_V)
+        {
+            I_focusPoint(img,x,img->_height-y);
+            Point pn = (Point) { x , __Gut_Y(y) };
+            P_add_vertex (&Poly, pn, black);
+            I_refresh();
+        }
+        else if (_V)
+        {
+            if (Poly.n != 0)
+            Poly.current_vertex = P_closest_vertex(&Poly, x, __Gut_Y(y));
+            I_refresh();
+        }
+    }
+    if((button==GLUT_RIGHT_BUTTON)&&(state==GLUT_DOWN))
+    {
+        if (!_V)
+            P_remove(&Poly, Poly.tail);
         I_refresh();
-    }	
+    }
+    if((button==GLUT_MIDDLE_BUTTON)&&(state==GLUT_DOWN))
+    {
+        if (_E)
+        {
+            Poly.current_vertex = P_closest_edge(&Poly, x, __Gut_Y(y));
+            I_refresh();
+        }
+    }
 
 	glutPostRedisplay();
 }
@@ -93,7 +123,6 @@ void mouse_CB(int button, int state, int x, int y)
 
 void keyboard_CB(unsigned char key, int x, int y)
 {
-	// fprintf(stderr,"key=%d\n",key);
 	switch(key)
 	{
 	case 27 : exit(1); break;
@@ -101,7 +130,15 @@ void keyboard_CB(unsigned char key, int x, int y)
 	case 'Z' : I_zoom(img,0.5); break;
 	case 'i' : I_zoomInit(img); break;
 	case 'c' : Poly.is_closed=!Poly.is_closed; break;
-	case 'f' : Poly.is_filled=!Poly.is_filled; break; 
+//	case 'f' : Poly.is_filled=!Poly.is_filled; break;
+    case 'v' : _V = !_V; (_V==1)?fprintf(stderr, "On passe en mode vertex\n"):fprintf(stderr,"On sort du mode Vertex\n"); 
+               Poly.is_edge = 1; break;
+    case 'e' : _E = !_E; (_E==1)?fprintf(stderr, "On passe en mode edge\n"):fprintf(stderr,"On sort du mode Edge\n");
+               Poly.is_edge = 0; break;
+    case 127 : if (_V && Poly.current_vertex != NULL ) {
+               P_remove(&Poly, Poly.current_vertex);
+               }
+                   break;
 	default : fprintf(stderr,"keyboard_CB : %d : unknown key.\n",key);
 	}
 	I_refresh();
@@ -126,8 +163,15 @@ void special_CB(int key, int x, int y)
 	case GLUT_KEY_DOWN  : I_move(img,0,-d); break;
 	case GLUT_KEY_LEFT  : I_move(img,d,0); break;
 	case GLUT_KEY_RIGHT : I_move(img,-d,0); break;
+	case GLUT_KEY_PAGE_UP  : if (_V)
+                                P_inc_current(&Poly);
+                        break;
+	case GLUT_KEY_PAGE_DOWN: if (_V)
+	                            P_dec_current(&Poly);
+	                    break;
 	default : fprintf(stderr,"special_CB : %d : unknown key.\n",key);
 	}
+	I_refresh();
 	glutPostRedisplay();
 }
 
