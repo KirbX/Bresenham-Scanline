@@ -2,113 +2,113 @@
 
 PolygonVertex * PV_new( Point p , Color c )
 {
-	PolygonVertex *pv = malloc( sizeof *pv ) ;
+    PolygonVertex *pv = malloc( sizeof *pv ) ;
 
-	pv->p = p ;
-	pv->c = c ;
-	pv->next = NULL ;
+    pv->p = p ;
+    pv->c = c ;
+    pv->next = NULL ;
 
-	return pv ;
+    return pv ;
 }
 
 Polygon P_new() 
 {
-	Polygon p ;
+    Polygon p ;
 
     p.n=0;
-	p.is_filled = p.is_closed = 0 ;
-	p.current_vertex = NULL ;
-	p.head = p.tail = NULL ;
+    p.is_filled = p.is_closed = 0 ;
+    p.current_vertex = NULL ;
+    p.head = p.tail = NULL ;
 
-	return p ;
+    return p ;
 }
 
 static inline int P_is_empty( Polygon *p )
 {
-	return p->head == NULL ;
+    return p->head == NULL ;
 }
 
 void P_add_vertex( Polygon *Poly , Point p , Color c ) 
 {
-	PolygonVertex *pv = PV_new( p , c ) ;
+    PolygonVertex *pv = PV_new( p , c ) ;
 
     Poly->n++;
 
-	if( P_is_empty( Poly ) )
-		Poly->head = Poly->tail = pv ;
+    if( P_is_empty( Poly ) )
+        Poly->head = Poly->tail = pv ;
 
-	else
-	{
-		Poly->tail->next = pv ;
-		Poly->tail = pv ;
-	}
+    else
+    {
+        Poly->tail->next = pv ;
+        Poly->tail = pv ;
+    }
 }
 
 void P_insert( Polygon *Poly , PolygonVertex *prec , PolygonVertex *post , Point p , Color c ) 
 {
-	PolygonVertex *pv = PV_new( p , c ) ;	
+    PolygonVertex *pv = PV_new( p , c ) ;    
     
     Poly->n++;
 
-	pv->next = post ;
-	prec->next = pv ;
+    pv->next = post ;
+    prec->next = pv ;
 }
 
 void P_remove( Polygon *Poly , PolygonVertex *p ) 
 {
-	PolygonVertex *it1 = NULL , *it2 = Poly->head ;
+    PolygonVertex *it1 = NULL , *it2 = Poly->head ;
     
     Poly->n--;
 
-	if( it2 == p )
-	{
-		Poly->head = it2->next ;
-	}
-	else
-	{
-		while( it2 != p )
-		{
-			it1 = it2 ;
-			it2 = it2->next ;
-		}
-		it1->next = it2->next ;
-	}
-	free( it2 ) ;
+    if( it2 == p )
+    {
+        Poly->head = it2->next ;
+    }
+    else
+    {
+        while( it2 != p )
+        {
+            it1 = it2 ;
+            it2 = it2->next ;
+        }
+        it1->next = it2->next ;
+    }
+    free( it2 ) ;
 }
 
 static inline int __carre( int x )
 {
-	return x*x ;
+    return x*x ;
 }
 
 static inline int __carred_euclid_distance( Point p , int x , int y )
 {
-	return __carre( p.x - x ) + __carre( p.y - y ) ;
+    return __carre( p.x - x ) + __carre( p.y - y ) ;
 }
 
 PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y ) 
 {
-	PolygonVertex *pv = Poly->head ,
-		      *it = Poly->head->next ;
+    PolygonVertex *pv = Poly->head ,
+              *it = Poly->head->next ;
 
-	int ced , min = __carred_euclid_distance( pv->p , x , y ) ;
+    int ced , min = __carred_euclid_distance( pv->p , x , y ) ;
 
-	while( it != NULL )
-	{
-		ced = __carred_euclid_distance( it->p , x , y ) ;
-		if( min > ced )
-		{
-			pv = it	;
-			min = ced ;
-		}
-	}
+    while( it != NULL )
+    {
+        ced = __carred_euclid_distance( it->p , x , y ) ;
+        if( min > ced )
+        {
+            pv = it    ;
+            min = ced ;
+        }
+    }
 
-	return pv ;
+    return pv ;
 }
 
 static void __dro_edge( Image *I , PolygonVertex *v1 , PolygonVertex *v2 )
 {
-	I_bresenham( I , v1->p.x , v1->p.y , v2->p.x , v2->p.y ) ;
+    I_bresenham( I , v1->p.x , v1->p.y , v2->p.x , v2->p.y ) ;
 }
 
 static int A_cmp(Arete *a1, Arete *a2)
@@ -116,13 +116,12 @@ static int A_cmp(Arete *a1, Arete *a2)
     return a1->pmin.y - a2->pmin.y;
 }
 
-static Arete* __fetch_edge_array(Polygon *Poly)
+static int __fetch_edge_array_and_pmax(Polygon *Poly , Arete *TA )
 {
-   Arete* TA = malloc(Poly->n * sizeof *TA);
-   
    PolygonVertex *it = Poly->head;
 
-   int i = 0;
+   int i = 0 , ymax = it->p.y ;
+
    while (it->next != NULL)
    {
        if (it->p.y < it->next->p.y)
@@ -135,6 +134,11 @@ static Arete* __fetch_edge_array(Polygon *Poly)
           TA[i].pmin = it->next->p;
           TA[i].pmax = it->p;
        }
+
+       if( it->p.y > ymax )
+          ymax = it->p.y ;
+
+       it = it->next ;
        i++;
    }
    if (Poly->head->p.y < Poly->tail->p.y)
@@ -144,19 +148,21 @@ static Arete* __fetch_edge_array(Polygon *Poly)
    }
    else
    {
-       TA[i].pmax = Poly->head->p;
        TA[i].pmin = Poly->tail->p;
+       TA[i].pmax = Poly->head->p;
    }
    
-   qsort(TA, Poly->n, sizeof(Arete), (__compar_fn_t)&A_cmp);
+   qsort(TA, Poly->n, sizeof(Arete), (__compar_fn_t)&A_cmp );
    
-   return TA;
+   return ymax ;
 }
 
 void Pedro( Image *I , Polygon *Poly ) 
 {
+    int ymax ;
     Arete *TA;
-	PolygonVertex *it = Poly->head ;
+    PolygonVertex *it = Poly->head ;
+
     if (!P_is_empty(Poly))
     { 
         if( it == Poly->tail)
@@ -172,8 +178,10 @@ void Pedro( Image *I , Polygon *Poly )
                 __dro_edge( I , Poly->tail , Poly->head ) ;
             if ( Poly->is_filled )
             {
-                TA = __fetch_edge_array(Poly);
-                I_scanline(I, TA, Poly->n, TA[0].pmin.y, TA[Poly->n-1].pmax.y, (Color) {0,0,0} );
+                TA = malloc( Poly->n * sizeof( *TA ) ) ;
+		ymax = __fetch_edge_array_and_pmax( Poly , TA ) ;
+                I_scanline(I, TA, Poly->n, TA[0].pmin.y, ymax );
+		free( TA ) ;
             }
         }
     }

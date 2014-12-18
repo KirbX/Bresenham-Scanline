@@ -1,57 +1,52 @@
 #include "ScanLine.h" 
 
-static void __TAA_remove( Arete **TAA , int n , Arete *a )
+static void __TAA_remove( Arete **TAA , const int n , const int i )
 {
-	int i = 0 ;
-	while( TAA[i] != a )
-		++ i ;
-	
-	memmove( TAA+i , TAA+i+1 , n-i-1 ) ;	
+	int j ;
+	for( j = i ; j < n-1 ; ++ j )
+		TAA[j] = TAA[j+1] ;	
 }
 
-static void __TAA_insert( Arete **TAA , int n , Arete *a )
+static int __cmp_aretes( Arete **a1 , Arete **a2 )
 {
-	int j , i = 0 ;
-
-	while( i < n-1 && TAA[i]->x_inters < a->x_inters )
-		++ i ;	
-
-	for( j = n-1 ; j != i ; ++ j )
-		TAA[j] = TAA[j-1] ;
-
-	TAA[i] = a ;
+	return (*a1)->x_inters - (*a2)->x_inters ;
 }
 
-void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , const int ymax , Color cnew )
+void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , const int ymax )
 {
 	int x , y , i , n , dx , dy ,
 	    ind_next = 0 , 
-	    aretes_actives = 0 ,
-	    next_ymin = TA[ind_next].pmin.y ;
+	    aretes_actives = 0 ;
 
 	Arete *a2i , *a2i1 , *a ;
-	Arete **TAA = malloc( nb_aretes * sizeof *TAA ) ;
+	Arete **TAA = calloc( nb_aretes , sizeof *TAA ) ;
 
 	for( y = ymin ; y <= ymax ; ++ y )
 	{
-		/* on ajoute à la table des arete actives les aretes intersectees par le scanline courrant */
-		while( y >= next_ymin )
+		/* on ajoute à la table des arête actives les arêtes intersectées par le scanline courrant */
+		while( ind_next < nb_aretes && y >= TA[ind_next].pmin.y )
 		{
 			TA[ind_next].x_inters = TA[ind_next].pmin.x ;
 			TA[ind_next].inc = 0 ;
-			__TAA_insert( TAA , aretes_actives , &TA[i] ) ;
+			
+			TAA[aretes_actives] = &TA[ind_next] ;
 			aretes_actives += 1 ;
+
 			ind_next += 1 ;
-			next_ymin = TA[ind_next].pmin.y ;
 		}
 
-		/* on enleve les aretes qui ne sont plus intersectees par le scanline */
+		/* On doit trier pour les polygones non simples au cas où les arêtes se sont croisées */
+		/* Il existe des méthodes plus efficaces mais ca suffit pour l'instant */
+		qsort( TAA , aretes_actives , sizeof *TAA ,  (__compar_fn_t)&__cmp_aretes ) ;
+
+		/* on enlève les arêtes qui ne sont plus intersectées par le scanline */
 		for( i = 0 ; i < aretes_actives ; ++ i )
 		{
 			if( y == TAA[i]->pmax.y )
 			{
-				__TAA_remove( TAA , aretes_actives , TAA[i] ) ;
+				__TAA_remove( TAA , aretes_actives , i ) ;
 				aretes_actives -= 1 ;
+				i --  ;
 			}
 		}
 
@@ -62,11 +57,12 @@ void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , c
 		{
 			a2i = TAA[2*i] ;
 			a2i1 = TAA[2*i+1] ;
+
 			for( x = a2i->x_inters ; x <= a2i1->x_inters ; ++ x )
-				I_plotColor( I , x , y , cnew ) ;
+				I_plot( I , x , y ) ;
 		}
 
-		/* on recalcule l'intersection en x avec le prochain scanline pour chaque arete */
+		/* on calcule pour chaque arête actibe l'intersection en x avec le prochain scanline */
 		for( i = 0 ; i < aretes_actives ; ++ i )
 		{
 			a = TAA[i] ;
