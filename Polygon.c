@@ -148,44 +148,6 @@ PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y )
 	return pv ;
 }
 
-static float __min_2(float a, float b)
-{
-    return (a<b)?a:b;
-}
-
-static float __dist_pt_xy(Point a, int x, int y){
-    return sqrt(__carre(a.x-x) + __carre(a.y-y));
-}
-
-static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
-{
-    float xya = __dist_pt_xy(a,x,y);
-    float xyb = __dist_pt_xy(b,x,y);
-    float xyab =sqrt(pow(((b.y-a.y)*(x-a.x)+(b.x-a.x)*(y-a.y)),2)/(pow((b.x-a.x),2) + pow((b.y-a.y),2)));
-    return __min_2(xya, __min_2(xyb,xyab));
-}
-
-PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y){
-    PolygonVertex *pv = Poly->head ,
-	     	      *it = Poly->head->next ;
-
-	float ced , min = __dist_edge_point( pv->p, pv->next->p , x , y ) ;
-
-	while( it != NULL && it->next != NULL)
-	{
-		ced = __dist_edge_point(it->p, it->next->p,x,y);
-		printf("%f\n",ced);
-		if( min > ced )
-		{
-			pv = it	;
-			min = ced ;
-		}
-	    it=it->next;
-	}
-
-	return pv ;
-
-}
 
 static void __dro_edge( Image *I , PolygonVertex *v1 , PolygonVertex *v2 )
 {
@@ -261,3 +223,36 @@ void Pedro( Image *I , Polygon *Poly )
 
 }
 
+
+
+/*************************************************/
+/*Algo : 
+ * Triangle ABP : Si orthocentre (ABP) C ABP => 
+ * Dist(AB,P) = Projete de P sur AB
+ * sinon
+ * Dist(AB,P) = min (dist(A,P),dist(B,P))
+ */
+static float __min_2(float a, float b)
+{
+    return (a<b)?a:b;
+}
+
+static float __dist_pt_xy(Point a, int x, int y){
+    return sqrt(__carre(a.x-x) + __carre(a.y-y));
+}
+
+static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
+{
+    float l2 = length_squared(a, b);
+    if ( l2 - EPSILON < 0 && l2 + EPSILON > 0) return __dist_pt_xy(a, x, y);
+    float t = __dot((Point) {x - a.x, y - a.y},(Point) {b.x - a.x, b.y - a.y});
+    if (t < 0.0) return __dist_pt_xy(a, x, y);
+    else if (t > 1.0) return __dist_pt_xy(b, x, y);
+    //Point projection =  a + t * (b - a);
+    //return __dist_pt_xy(projection, x,y);
+}
+
+PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y){
+	return pv ;
+
+}
