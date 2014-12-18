@@ -21,8 +21,6 @@ void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , c
 	Arete *a2i , *a2i1 , *a ;
 	Arete **TAA = calloc( nb_aretes , sizeof *TAA ) ;
 
-	printf( "ymax:%d\n" , ymax ) ;
-
 	for( y = ymin ; y <= ymax ; ++ y )
 	{
 		/* on ajoute à la table des arête actives les arêtes intersectées par le scanline courrant */
