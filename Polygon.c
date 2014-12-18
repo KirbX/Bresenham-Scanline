@@ -1,4 +1,7 @@
 #include "Polygon.h"
+#include "math.h"
+
+static const float EPSILON = 1e-4;
 
 PolygonVertex * PV_new( Point p , Color c )
 {
@@ -57,23 +60,63 @@ void P_insert( Polygon *Poly , PolygonVertex *prec , PolygonVertex *post , Point
 void P_remove( Polygon *Poly , PolygonVertex *p ) 
 {
     PolygonVertex *it1 = NULL , *it2 = Poly->head ;
-    
-    Poly->n--;
-
-    if( it2 == p )
+   
+    if (!(Poly->n==0))
     {
-        Poly->head = it2->next ;
-    }
-    else
-    {
-        while( it2 != p )
+        Poly->n--;
+        if (Poly->n==0)
         {
-            it1 = it2 ;
-            it2 = it2->next ;
+            Poly->head=NULL;
+            Poly->tail=NULL;
+            Poly->current_vertex = NULL;
         }
-        it1->next = it2->next ;
+        if( it2 == p )
+        {
+            Poly->head = it2->next ;
+            Poly->current_vertex = it2->next;
+        }
+        else
+        {
+            while( it2 != p )
+            {
+                it1 = it2 ;
+                it2 = it2->next ;
+            }
+            if (it2 == Poly->tail)
+            {
+                Poly->tail = it1;
+            }
+            it1->next = it2->next ;
+            Poly->current_vertex = it1;
+        }
+        free( it2 ) ;
     }
-    free( it2 ) ;
+}
+
+void P_inc_current( Polygon *Poly )
+{
+    if (Poly->current_vertex != NULL)
+    {
+        if (Poly->current_vertex == Poly->tail)
+            Poly->current_vertex = Poly->head;
+        else if (Poly->current_vertex->next != NULL)
+            Poly->current_vertex = Poly->current_vertex->next;
+    }
+}
+
+void P_dec_current( Polygon *Poly )
+{
+    PolygonVertex *it = Poly->head ;
+    if (Poly->current_vertex != NULL) 
+    {
+        if (Poly->current_vertex == Poly->head)
+            Poly->current_vertex = Poly->tail;
+        else{
+            while (it->next != Poly->current_vertex)
+                it = it->next;
+            Poly->current_vertex = it;
+        }
+    }
 }
 
 static inline int __carre( int x )
@@ -88,23 +131,25 @@ static inline int __carred_euclid_distance( Point p , int x , int y )
 
 PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y ) 
 {
-    PolygonVertex *pv = Poly->head ,
-              *it = Poly->head->next ;
+	PolygonVertex *pv = Poly->head ,
+		      *it = Poly->head->next ;
 
-    int ced , min = __carred_euclid_distance( pv->p , x , y ) ;
+	int ced , min = __carred_euclid_distance( pv->p , x , y ) ;
 
-    while( it != NULL )
-    {
-        ced = __carred_euclid_distance( it->p , x , y ) ;
-        if( min > ced )
-        {
-            pv = it    ;
-            min = ced ;
-        }
-    }
+	while( it != NULL )
+	{
+		ced = __carred_euclid_distance( it->p , x , y ) ;
+		if( min > ced )
+		{
+			pv = it	;
+			min = ced ;
+		}
+	    it=it->next;
+	}
 
-    return pv ;
+	return pv ;
 }
+
 
 static void __dro_edge( Image *I , PolygonVertex *v1 , PolygonVertex *v2 )
 {
@@ -169,13 +214,6 @@ void Pedro( Image *I , Polygon *Poly )
             I_plot( I , it->p.x , it->p.y ) ;
         else
         {
-            while( it->next != NULL )
-            {
-                __dro_edge( I , it , it->next ) ;
-                it = it->next;
-            }
-            if( Poly->is_closed ) 
-                __dro_edge( I , Poly->tail , Poly->head ) ;
             if ( Poly->is_filled )
             {
                 TA = malloc( Poly->n * sizeof( *TA ) ) ;
@@ -183,8 +221,77 @@ void Pedro( Image *I , Polygon *Poly )
                 I_scanline(I, TA, Poly->n, TA[0].pmin.y, ymax );
 		free( TA ) ;
             }
+	    else
+	    {
+                while( it->next != NULL )
+                {
+                    __dro_edge( I , it , it->next ) ;
+                    it = it->next;
+                }
+                if( Poly->is_closed ) 
+                    __dro_edge( I , Poly->tail , Poly->head ) ;
+            }
         }
     }
 
 }
 
+
+
+/*************************************************/
+/*Algo : 
+ * Triangle ABP : Si orthocentre (ABP) C ABP => 
+ * Dist(AB,P) = Projete de P sur AB
+ * sinon
+ * Dist(AB,P) = min (dist(A,P),dist(B,P))
+ */
+
+static inline int __length_squared(Point a, Point b)
+{
+	return __carre( a.x - b.x ) + __carre( a.y - b.y ) ;
+}
+static float __dist_pt_xy(Point a, int x, int y){
+    return sqrt(__carre(a.x-x) + __carre(a.y-y));
+}
+
+static float __dot(Point a, Point b){
+	return (float)a.x*b.x + a.y*b.y;
+}
+
+static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
+{
+    int l2 = __length_squared(a, b);
+    if ( l2 == 0) return __dist_pt_xy(a, x, y);
+    float t = __dot((Point) {x - a.x, y - a.y},(Point) {b.x - a.x, b.y - a.y});
+    if (t < 0.0) return __dist_pt_xy(a, x, y);
+    else if (t > 1.0) return __dist_pt_xy(b, x, y);
+    Point projection =(Point){a.x + t * (b.x - a.x), a.y +t * (b.y - a.y)};
+    return __dist_pt_xy(projection, x,y);
+}
+
+PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y)
+{
+	PolygonVertex *pv = Poly->head ,
+		      *it = Poly->head->next ;
+
+	float ced , min = __dist_edge_point( pv->p, pv->next->p , x , y ) ;
+
+	while( it != NULL && it->next !=NULL)
+	{
+		ced = __dist_edge_point( it->p, it->next->p , x , y ) ;
+		if( min > ced )
+		{
+			pv = it	;
+			min = ced ;
+		}
+	    it=it->next;
+		if ( it == Poly -> tail)
+			ced = __dist_edge_point ( it->p, Poly->head->p, x, y);
+		if ( min > ced)
+		{
+			pv = it ;
+			min = ced;
+		}
+	}
+	return pv ;
+}

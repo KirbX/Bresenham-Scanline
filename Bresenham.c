@@ -15,7 +15,7 @@ static void I_reversePlot( Image *img , int x , int y )
  * la droite passant par (x0,y0) et de vecteur directeur (dx,dy)
  * doit se trouver dans le premier octant
  */
-static void __bresenham( Image *img , int x0 , int y0 , int dx , int dy , int incr , plot_func_t plot )
+static void __bresenham( Image *img , const int x0 , const int y0 , const int dx , const int dy , const int incr , const plot_func_t plot )
 {
 	int y = y0 ,
 	    c = dx ,
@@ -48,7 +48,7 @@ static inline void __point_swap( int *xA , int *yA , int *xB , int *yB )
 	__int_swap( yA , yB ) ;
 }
 
-static inline int __abs( int i )
+static inline int __abs( const int i )
 {
 	int mask = i >> ( NB_BITS(i) - 1 ) ;
 
