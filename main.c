@@ -117,6 +117,7 @@ void mouse_CB(int button, int state, int x, int y)
         }
     }
 
+	printf( "%d\t%d\n", x ,__Gut_Y( y ) ) ;
 	glutPostRedisplay();
 }
 

@@ -196,6 +196,9 @@ static int __fetch_edge_array_and_pmax(Polygon *Poly , Arete *TA )
        TA[i].pmin = Poly->tail->p;
        TA[i].pmax = Poly->head->p;
    }
+
+   if( Poly->tail->p.y > ymax )
+   	ymax = Poly->tail->p.y ;
    
    qsort(TA, Poly->n, sizeof(Arete), (__compar_fn_t)&A_cmp );
    
