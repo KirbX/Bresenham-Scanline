@@ -232,27 +232,53 @@ void Pedro( Image *I , Polygon *Poly )
  * sinon
  * Dist(AB,P) = min (dist(A,P),dist(B,P))
  */
-static float __min_2(float a, float b)
-{
-    return (a<b)?a:b;
-}
 
+static inline int __length_squared(Point a, Point b)
+{
+	return __carre( a.x - b.x ) + __carre( a.y - b.y ) ;
+}
 static float __dist_pt_xy(Point a, int x, int y){
     return sqrt(__carre(a.x-x) + __carre(a.y-y));
 }
 
+static float __dot(Point a, Point b){
+	return (float)a.x*b.x + a.y*b.y;
+}
+
 static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
 {
-    float l2 = length_squared(a, b);
-    if ( l2 - EPSILON < 0 && l2 + EPSILON > 0) return __dist_pt_xy(a, x, y);
+    int l2 = __length_squared(a, b);
+    if ( l2 == 0) return __dist_pt_xy(a, x, y);
     float t = __dot((Point) {x - a.x, y - a.y},(Point) {b.x - a.x, b.y - a.y});
     if (t < 0.0) return __dist_pt_xy(a, x, y);
     else if (t > 1.0) return __dist_pt_xy(b, x, y);
-    //Point projection =  a + t * (b - a);
-    //return __dist_pt_xy(projection, x,y);
+    Point projection =(Point){a.x + t * (b.x - a.x), a.y +t * (b.y - a.y)};
+    return __dist_pt_xy(projection, x,y);
 }
 
-PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y){
-	return pv ;
+PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y)
+{
+	PolygonVertex *pv = Poly->head ,
+		      *it = Poly->head->next ;
 
+	float ced , min = __dist_edge_point( pv->p, pv->next->p , x , y ) ;
+
+	while( it != NULL && it->next !=NULL)
+	{
+		ced = __dist_edge_point( it->p, it->next->p , x , y ) ;
+		if( min > ced )
+		{
+			pv = it	;
+			min = ced ;
+		}
+	    it=it->next;
+		if ( it == Poly -> tail)
+			ced = __dist_edge_point ( it->p, Poly->head->p, x, y);
+		if ( min > ced)
+		{
+			pv = it ;
+			min = ced;
+		}
+	}
+	return pv ;
 }

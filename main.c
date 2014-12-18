@@ -55,6 +55,10 @@ static void I_refresh()
     {
         __Carre_PV(img, Poly.current_vertex);
         __Carre_PV(img, Poly.current_vertex->next);
+		if (Poly.current_vertex == Poly.tail){
+			__Carre_PV(img, Poly.current_vertex);
+			__Carre_PV(img, Poly.head);
+		}
     }
 }
 
