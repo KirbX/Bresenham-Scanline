@@ -267,17 +267,12 @@ void Pedro( Image *I , Polygon *Poly )
 
 
 /*************************************************/
-/*Algo : 
- * Triangle ABP : Si orthocentre (ABP) C ABP => 
- * Dist(AB,P) = Projete de P sur AB
- * sinon
- * Dist(AB,P) = min (dist(A,P),dist(B,P))
- */
 
-static inline int __length_squared(Point a, Point b)
+static inline int __dist_carre(Point a, Point b)
 {
-	return __carre( a.x - b.x ) + __carre( a.y - b.y ) ;
+    return __carre( a.x - b.x ) + __carre( a.y - b.y ) ;
 }
+
 static float __dist_pt_xy(Point a, int x, int y){
     return sqrt(__carre(a.x-x) + __carre(a.y-y));
 }
@@ -288,12 +283,21 @@ static float __dot(Point a, Point b){
 
 static float __dist_edge_point(Point a, Point b, int x, int y) //FAUX
 {
-    int l2 = __length_squared(a, b);
+    // |b-a| ^ 2
+    int l2 = __dist_carre(a, b);
+    // si l2 == 0, a et b sont sur le meme point, donc on renvoie la distance entre un point et a
     if ( l2 == 0) return __dist_pt_xy(a, x, y);
+    //projection de (x,y) sur ab
+    //(avec P (x,y)
+    //ca tombe sur ab lorsque t vaut :
+    //t = __dot[(P-a), (B-a)] / l2
     float t = __dot((Point) {x - a.x, y - a.y},(Point) {b.x - a.x, b.y - a.y});
+    //si t est "avant" a: 
     if (t < 0.0) return __dist_pt_xy(a, x, y);
+    //si t est "apres" b:
     else if (t > 1.0) return __dist_pt_xy(b, x, y);
-    Point projection =(Point){a.x + t * (b.x - a.x), a.y +t * (b.y - a.y)};
+    //sinon, la projection est:
+    Point projection = (Point){a.x + t * (b.x - a.x), a.y +t * (b.y - a.y)};
     return __dist_pt_xy(projection, x,y);
 }
 
