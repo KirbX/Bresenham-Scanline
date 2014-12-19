@@ -28,6 +28,10 @@ void P_remove( Polygon *Poly , PolygonVertex *p ) ;
 
 void P_inc_current( Polygon *Poly );
 void P_dec_current( Polygon *Poly );
+void _Inc_X(Image *img, PolygonVertex *current); 
+void _Dec_X(Image *img, PolygonVertex *current);
+void _Inc_Y(Image *img, PolygonVertex *current);
+void _Dec_Y(Image *img, PolygonVertex *current);
 
 PolygonVertex * P_closest_vertex( Polygon *Poly , int x , int y ) ;
 PolygonVertex * P_closest_edge( Polygon* Poly, int x, int y);

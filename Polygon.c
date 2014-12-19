@@ -47,6 +47,7 @@ void P_add_vertex( Polygon *Poly , Point p , Color c )
     }
 }
 
+
 void P_insert( Polygon *Poly , PolygonVertex *prec , PolygonVertex *post , Point p , Color c ) 
 {
     PolygonVertex *pv = PV_new( p , c ) ;    
@@ -117,6 +118,30 @@ void P_dec_current( Polygon *Poly )
             Poly->current_vertex = it;
         }
     }
+}
+
+void _Inc_Y(Image *img, PolygonVertex *current)
+{
+    if (current->p.y + 1 < img->_height)
+        current->p.y ++;
+}
+
+void _Dec_Y(Image *img, PolygonVertex *current)
+{
+    if (current->p.y - 1 >= 0)
+        current->p.y --;
+}
+
+void _Inc_X(Image *img, PolygonVertex *current)
+{
+    if (current->p.x + 1 < img->_width)
+        current->p.x ++;
+}
+
+void _Dec_X(Image *img, PolygonVertex *current)
+{
+    if (current->p.x - 1 >= 0)
+        current->p.x --;
 }
 
 static inline int __carre( int x )
