@@ -33,9 +33,13 @@ static int __Gut_Y(int y)
 
 static void __Carre (Image *img, int x, int y){
     I_changeColor(img, (Color) {1.0,0.0,0.0});
+	if (x-4 > 0 && __Gut_Y(y)+4 < img->_height && x+4 < img->_width)
     I_bresenham( img, x-4, __Gut_Y(y)+4, x+4, __Gut_Y(y)+4);
+	if (x+4 <img->_width && __Gut_Y(y)+4 < img->_height && __Gut_Y(y)-4 > 0)
     I_bresenham( img, x+4, __Gut_Y(y)+4, x+4, __Gut_Y(y)-4);
+	if (x+4 < img->_width && __Gut_Y(y)-4 > 0 && x-4 > 0 )
     I_bresenham( img, x+4, __Gut_Y(y)-4, x-4, __Gut_Y(y)-4);
+	if (x-4 > 0 && __Gut_Y(y)-4 > 0 &&  __Gut_Y(y)+4 < img->_height)
     I_bresenham( img, x-4, __Gut_Y(y)-4, x-4, __Gut_Y(y)+4);
 }
 
@@ -48,6 +52,8 @@ static void I_refresh()
     I_fill( img, white ) ;
     I_changeColor(img, black) ;
     Pedro(img, &Poly);
+	if (Poly.head != NULL)
+	{
     if (_V && Poly.current_vertex !=NULL)
         __Carre_PV(img, Poly.current_vertex);
 
@@ -60,6 +66,7 @@ static void I_refresh()
         __Carre_PV(img, Poly.current_vertex);
         __Carre_PV(img, Poly.head);
     }
+	}
 }
 
 //------------------------------------------------------------------
@@ -243,6 +250,16 @@ void special_CB(int key, int x, int y)
 	glutPostRedisplay();
 }
 
+void mouse_move_CB(int x, int y){
+	if (_V && x < img->_width && x > 0 && __Gut_Y(y) < img->_height && __Gut_Y(y) > 0){
+		Poly.current_vertex->p.x = x;
+		Poly.current_vertex->p.y = __Gut_Y(y);
+		I_refresh();
+	} 
+	glutPostRedisplay();
+}
+
+
 //------------------------------------------------------------------------
 
 int main(int argc, char **argv)
@@ -291,8 +308,8 @@ int main(int argc, char **argv)
 		glutKeyboardFunc(keyboard_CB);
 		glutSpecialFunc(special_CB);
 		glutMouseFunc(mouse_CB);
-		// glutMotionFunc(mouse_move_CB);
-		// glutPassiveMotionFunc(passive_mouse_move_CB);
+		glutMotionFunc(mouse_move_CB);
+		//glutPassiveMotionFunc(passive_mouse_move_CB);
 
 		glutMainLoop();
 
