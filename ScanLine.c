@@ -23,7 +23,7 @@ void I_scanline( Image *I , Arete *TA , const int nb_aretes , const int ymin , c
 
 	for( y = ymin ; y <= ymax ; ++ y )
 	{
-		/* on ajoute à la table des arête actives les arêtes intersectées par le scanline courrant */
+		/* on ajoute à la table des arête actives les arêtes intersectées par le scanline courant */
 		while( ind_next < nb_aretes && y >= TA[ind_next].pmin.y )
 		{
 			TA[ind_next].x_inters = TA[ind_next].pmin.x ;

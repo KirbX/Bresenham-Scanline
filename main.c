@@ -125,7 +125,7 @@ void mouse_CB(int button, int state, int x, int y)
     {
         if (_E)
         {
-            if (Poly.current_vertex != NULL)
+            if (Poly.current_vertex != NULL && Poly.current_vertex != Poly.tail)
             {
                 P_insert(&Poly, Poly.current_vertex, Poly.current_vertex->next, (Point) {(Poly.current_vertex->p.x + Poly.current_vertex->next->p.x) / 2, (Poly.current_vertex->p.y + Poly.current_vertex->next->p.y) / 2}, (Color){0.0,0.0,0.0});
                 _E = !_E;
@@ -133,6 +133,14 @@ void mouse_CB(int button, int state, int x, int y)
                 fprintf(stderr,"On est en mode vertex et on sort du mode edge, la\n");
                 Poly.current_vertex = Poly.current_vertex->next;
             }
+            if (Poly.current_vertex != NULL && Poly.current_vertex == Poly.tail)
+            {
+				P_add_vertex(&Poly, (Point){(Poly.current_vertex->p.x + Poly.head->p.x)/2, (Poly.current_vertex->p.y + Poly.head->p.y)/2}, black);
+				_E = !_E;
+                _V = !_V;
+                fprintf(stderr,"On est en mode vertex et on sort du mode edge, la\n");
+                Poly.current_vertex = Poly.current_vertex->next;
+			}
             I_refresh();
         }
     }
@@ -251,7 +259,7 @@ void special_CB(int key, int x, int y)
 }
 
 void mouse_move_CB(int x, int y){
-	if (_V && x < img->_width && x > 0 && __Gut_Y(y) < img->_height && __Gut_Y(y) > 0){
+	if (_V && x < img->_width && x > 0 && __Gut_Y(y) < img->_height && __Gut_Y(y) > 0 && Poly.current_vertex != NULL){
 		Poly.current_vertex->p.x = x;
 		Poly.current_vertex->p.y = __Gut_Y(y);
 		I_refresh();
